@@ -1,9 +1,10 @@
-export function parsePriority(input) {
-  if (input == null) {
+export function parsePriority(inp) {
+  if (inp == null) {
     return 0;
   }
+  
 
-  const value = Number(input);
+  const value = Number(inp);
 
   if (!value) {
     return 1;
