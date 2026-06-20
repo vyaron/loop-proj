@@ -3,6 +3,7 @@ export function parsePriority(input) {
     return 0;
   }
 
+  
   const value = Number(input);
 
   if (!value) {
