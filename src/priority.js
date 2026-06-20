@@ -4,25 +4,18 @@ export function parsePriority(input) {
     return 0;
   }
 
-  // Accept only number or string inputs; reject arrays, objects, functions, etc.
+  // Accept only number or string inputs
   if (typeof input !== 'number' && typeof input !== 'string') {
-    // Default to priority 1 for unsupported input types
-    return 1;
-  }
-
-  // Additional check: reject inputs that are objects (including arrays) or functions
-  // to avoid unexpected numeric coercion (e.g. [5] -> 5).
-  // Note: typeof null is 'object' but caught above; this handles arrays and objects.
-  if (typeof input === 'object' || Array.isArray(input)) {
-    return 1;
+    // For unsupported types (objects, arrays, functions), return 0
+    return 0;
   }
 
   // Convert to number (valid for string or number input)
   const value = Number(input);
 
-  // If conversion results in NaN, return default priority 1
+  // If conversion results in NaN, return 0
   if (Number.isNaN(value)) {
-    return 1;
+    return 0;
   }
 
   // Floor any decimal values to get integer priority
