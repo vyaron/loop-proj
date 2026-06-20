@@ -1,6 +1,6 @@
 {
-  "attempts": 1,
-  "lastScore": 3,
-  "updatedAt": "2026-06-20T13:49:35.186Z",
-  "summary": "Fixed parsePriority function to correctly handle falsy values like 0, NaN, negative inputs, and enforce both lower and upper bounds (0 to 10). Added explicit checks to handle non-numeric inputs by returning default priority 1 only when input is invalid but not zero. Preserved null input return 0 behavior."
+  "attempts": 2,
+  "lastScore": 5,
+  "updatedAt": "2026-06-20T13:52:18.093Z",
+  "summary": "Added detailed input type and value validation in parsePriority to robustly handle strings with whitespace, empty strings, fractional numbers, and non-string inputs. Added comments clarifying handling of fractional values and inputs. Enforced integer priority by rounding down fractions. Added explicit handling for input types to avoid treating invalid inputs as 0. Added a minimal inline test block to cover edge cases and improve confidence and documentation of behavior."
 }
