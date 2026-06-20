@@ -49,15 +49,33 @@ function isAllowedPath(filePath) {
   return filePath.startsWith('src/') || filePath.startsWith('test/');
 }
 
+function collectCandidateFiles(review) {
+  const fromFilesToFix = Array.isArray(review.filesToFix) ? review.filesToFix : [];
+  const fromIssues = Array.isArray(review.issues) ? review.issues.map((issue) => issue.path) : [];
+
+  return [...new Set([...fromFilesToFix, ...fromIssues].filter((filePath) => typeof filePath === 'string'))]
+    .filter(isAllowedPath);
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const reviewPath = args.review ?? path.join('artifacts', 'review-result.json');
   const attempt = Number(args.attempt ?? '1');
   const review = JSON.parse(await readFile(reviewPath, 'utf8'));
-  const filesToFix = [...new Set(review.filesToFix.filter(isAllowedPath))];
+  const filesToFix = collectCandidateFiles(review);
 
   if (filesToFix.length === 0) {
+    const nextState = {
+      attempts: attempt,
+      lastScore: review.score,
+      updatedAt: new Date().toISOString(),
+      summary: 'No eligible files to fix from filesToFix or issue paths.',
+      updatedFiles: []
+    };
+
+    await writeFile('.loop-state.json', `${JSON.stringify(nextState, null, 2)}\n`);
     console.log('No eligible files to fix.');
+    console.log(JSON.stringify(nextState));
     return;
   }
 
@@ -77,7 +95,9 @@ async function main() {
       'Update only the provided files.',
       'Preserve the project structure and exports.',
       'Return complete rewritten file contents for each updated file.',
-      'Prefer minimal changes that improve correctness, tests, readability, and safety.'
+      'Prefer minimal changes that improve correctness, tests, readability, and safety.',
+      'If the score is below 8, produce at least one concrete improvement.',
+      'When behavior changes in src files, update or add relevant tests in test files when provided.'
     ].join(' '),
     userPrompt: JSON.stringify(
       {
@@ -101,7 +121,8 @@ async function main() {
     attempts: attempt,
     lastScore: review.score,
     updatedAt: new Date().toISOString(),
-    summary: fix.summary
+    summary: fix.summary,
+    updatedFiles: fix.updates.map((update) => update.path)
   };
 
   await writeFile('.loop-state.json', `${JSON.stringify(nextState, null, 2)}\n`);
