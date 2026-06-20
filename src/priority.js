@@ -1,25 +1,34 @@
 export function parsePriority(input) {
+  // Return 0 for null or undefined inputs to signify no priority
   if (input == null) {
-    // Null or undefined inputs receive priority 0
     return 0;
   }
 
-  // Accept only string or number inputs explicitly
-  if (typeof input !== 'string' && typeof input !== 'number') {
-    return 1; // Default priority for unsupported input types
+  // Accept only number or string inputs; reject arrays, objects, functions, etc.
+  if (typeof input !== 'number' && typeof input !== 'string') {
+    // Default to priority 1 for unsupported input types
+    return 1;
   }
 
-  // Convert to number (for strings or numbers)
+  // Additional check: reject inputs that are objects (including arrays) or functions
+  // to avoid unexpected numeric coercion (e.g. [5] -> 5).
+  // Note: typeof null is 'object' but caught above; this handles arrays and objects.
+  if (typeof input === 'object' || Array.isArray(input)) {
+    return 1;
+  }
+
+  // Convert to number (valid for string or number input)
   const value = Number(input);
 
+  // If conversion results in NaN, return default priority 1
   if (Number.isNaN(value)) {
-    return 1; // Default priority for invalid numeric inputs
+    return 1;
   }
 
-  // Ensure integer priority by flooring any decimal values
+  // Floor any decimal values to get integer priority
   const intValue = Math.floor(value);
 
-  // Clamp value between 0 and 10
+  // Clamp the priority between 0 and 10 inclusive
   if (intValue < 0) {
     return 0;
   }
