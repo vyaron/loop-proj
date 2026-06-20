@@ -1,0 +1,6 @@
+{
+  "attempts": 1,
+  "lastScore": 3,
+  "updatedAt": "2026-06-20T14:07:13.076Z",
+  "summary": "Fixed parsePriority to correctly handle falsy values like 0, invalid inputs, and negative numbers by returning 0 for nullish and invalid inputs, capping values below 0 at 0 and above 10 at 10. Improved correctness and reliability of priority parsing."
+}

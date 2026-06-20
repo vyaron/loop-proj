@@ -5,8 +5,12 @@ export function parsePriority(inp) {
 
   const value = Number(inp);
 
-  if (!value) {
-    return 1;
+  if (isNaN(value)) {
+    return 0;
+  }
+
+  if (value < 0) {
+    return 0;
   }
 
   if (value > 10) {
