@@ -1,0 +1,14 @@
+{
+  "name": "loop-proj",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "review": "node scripts/review.mjs",
+    "fix": "node scripts/fix.mjs"
+  },
+  "dependencies": {
+    "openai": "^4.104.0"
+  }
+}

@@ -1,0 +1,171 @@
+name: PR Review Loop
+
+on:
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pr-review-loop-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  review-and-fix:
+    if: ${{ github.event.pull_request.head.repo.fork == false }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure Git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Read loop state
+        id: loop_state
+        shell: bash
+        run: |
+          if [ -f .loop-state.json ]; then
+            current=$(node -e "console.log(JSON.parse(require('fs').readFileSync('.loop-state.json', 'utf8')).attempts ?? 0)")
+          else
+            current=0
+          fi
+
+          echo "current=$current" >> "$GITHUB_OUTPUT"
+          echo "next=$((current + 1))" >> "$GITHUB_OUTPUT"
+
+      - name: Review changed files
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_REVIEW_MODEL: ${{ vars.OPENAI_REVIEW_MODEL || 'gpt-4.1-mini' }}
+        run: >-
+          node scripts/review.mjs
+          --base "${{ github.event.pull_request.base.sha }}"
+          --head "${{ github.event.pull_request.head.sha }}"
+          --out artifacts/review-result.json
+
+      - name: Extract review score
+        id: review
+        shell: bash
+        run: |
+          score=$(node -e "console.log(JSON.parse(require('fs').readFileSync('artifacts/review-result.json', 'utf8')).score)")
+          summary=$(node -e "console.log(JSON.parse(require('fs').readFileSync('artifacts/review-result.json', 'utf8')).summary.replace(/\n/g, ' '))")
+
+          echo "score=$score" >> "$GITHUB_OUTPUT"
+          echo "summary=$summary" >> "$GITHUB_OUTPUT"
+
+      - name: Upsert PR comment
+        uses: actions/github-script@v7
+        env:
+          SCORE: ${{ steps.review.outputs.score }}
+          ATTEMPT: ${{ steps.loop_state.outputs.next }}
+          REVIEW_FILE: artifacts/review-result.json
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- pr-review-loop -->';
+            const review = JSON.parse(fs.readFileSync(process.env.REVIEW_FILE, 'utf8'));
+            const issues = review.issues.length
+              ? review.issues.map((issue) => `- ${issue.path}: ${issue.title} (${issue.severity})`).join('\n')
+              : '- No blocking issues detected.';
+            const body = [
+              marker,
+              `## PR Review Loop`,
+              `Score: ${process.env.SCORE}/10`,
+              `Attempt: ${process.env.ATTEMPT}/5`,
+              '',
+              review.summary,
+              '',
+              'Issues:',
+              issues
+            ].join('\n');
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              per_page: 100
+            });
+
+            const existing = comments.find((comment) => comment.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
+
+      - name: Stop when score is high enough
+        if: ${{ fromJSON(steps.review.outputs.score) >= 8 }}
+        run: echo "Score reached threshold."
+
+      - name: Stop at retry limit
+        if: ${{ fromJSON(steps.review.outputs.score) < 8 && fromJSON(steps.loop_state.outputs.next) > 5 }}
+        run: echo "Retry limit reached."
+
+      - name: Ask OpenAI to fix flagged files
+        if: ${{ fromJSON(steps.review.outputs.score) < 8 && fromJSON(steps.loop_state.outputs.next) <= 5 }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_FIX_MODEL: ${{ vars.OPENAI_FIX_MODEL || 'gpt-4.1-mini' }}
+        run: >-
+          node scripts/fix.mjs
+          --review artifacts/review-result.json
+          --attempt "${{ steps.loop_state.outputs.next }}"
+
+      - name: Run tests after fix
+        if: ${{ fromJSON(steps.review.outputs.score) < 8 && fromJSON(steps.loop_state.outputs.next) <= 5 }}
+        run: npm test
+
+      - name: Check whether files changed
+        id: diff
+        if: ${{ fromJSON(steps.review.outputs.score) < 8 && fromJSON(steps.loop_state.outputs.next) <= 5 }}
+        shell: bash
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push retry changes
+        if: ${{ fromJSON(steps.review.outputs.score) < 8 && fromJSON(steps.loop_state.outputs.next) <= 5 && steps.diff.outputs.changed == 'true' }}
+        run: |
+          git add src test .loop-state.json
+          git commit -m "chore: automated review loop fix attempt ${{ steps.loop_state.outputs.next }}"
+          git push
+
+      - name: No-op when fixer produced no diff
+        if: ${{ fromJSON(steps.review.outputs.score) < 8 && fromJSON(steps.loop_state.outputs.next) <= 5 && steps.diff.outputs.changed != 'true' }}
+        run: echo "Fixer produced no file changes."
