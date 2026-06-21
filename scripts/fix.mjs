@@ -55,6 +55,14 @@ async function main() {
   const attempt = Number(args.attempt ?? '1');
   const review = JSON.parse(await readFile(reviewPath, 'utf8'));
   const filesToFix = [...new Set(review.filesToFix.filter(isAllowedPath))];
+  let previousTestFeedback = null;
+
+  try {
+    const loopState = JSON.parse(await readFile('.loop-state.json', 'utf8'));
+    previousTestFeedback = loopState.testFeedback ?? null;
+  } catch {
+    previousTestFeedback = null;
+  }
 
   if (filesToFix.length === 0) {
     console.log('No eligible files to fix.');
@@ -77,11 +85,13 @@ async function main() {
       'Update only the provided files.',
       'Preserve the project structure and exports.',
       'Return complete rewritten file contents for each updated file.',
-      'Prefer minimal changes that improve correctness, tests, readability, and safety.'
+      'Prefer minimal changes that improve correctness, tests, readability, and safety.',
+      'If previous test feedback exists, prioritize fixing those failures first.'
     ].join(' '),
     userPrompt: JSON.stringify(
       {
         currentReview: review,
+        previousTestFeedback,
         files: filePayload
       },
       null,
