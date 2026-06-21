@@ -1,0 +1,6 @@
+{
+  "attempts": 1,
+  "lastScore": 3,
+  "updatedAt": "2026-06-21T19:40:39.394Z",
+  "summary": "Fixed incorrect falsy check that treated 0 as invalid, added explicit NaN and negative input handling, and enforced lower bound of 0 for priority values."
+}
