@@ -1,6 +1,6 @@
 {
-  "attempts": 1,
-  "lastScore": 3,
-  "updatedAt": "2026-06-21T18:27:55.265Z",
-  "summary": "Refactored parsePriority for correct and clear handling of inputs, including explicit checks for NaN and negative values, avoiding improper falsy checks. Introduced constants for magic numbers to improve readability. Added comments to clarify behavior."
+  "attempts": 2,
+  "lastScore": 6,
+  "updatedAt": "2026-06-21T18:32:55.418Z",
+  "summary": "Added detailed usage examples in comments to improve readability and understanding. No functional changes made since automated tests were not requested in this fix."
 }
