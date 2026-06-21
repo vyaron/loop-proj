@@ -3,19 +3,19 @@
  * Returns 0 for null, undefined, invalid types, empty strings, or NaN.
  * Clamps fractional and out-of-range values to the valid range.
  *
- * @param {string|number|null|undefined} n - The input priority value.
+ * @param {string|number|null|undefined} txt - The input priority value.
  * @returns {number} An integer priority from 0 to 10.
  */
-export function parsePriority(n) {
-  if (n == null) return 0;
-  if (typeof n !== 'string' && typeof n !== 'number') return 0;
+export function parsePriority(txt) {
+  if (txt == null) return 0;
+  if (typeof txt !== 'string' && typeof txt !== 'number') return 0;
 
-  if (typeof n === 'string') {
-    n = n.trim();
-    if (n === '') return 0;
+  if (typeof txt === 'string') {
+    txt = txt.trim();
+    if (txt === '') return 0;
   }
 
-  const value = Number(n);
+  const value = Number(txt);
   if (isNaN(value)) return 0;
 
   return Math.min(10, Math.max(0, Math.floor(value)));
