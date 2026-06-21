@@ -4,10 +4,14 @@ export function parsePriority(n) {
     return 0;
   }
 
-  // If input is a string, trim whitespace
+  // Only strings and numbers are valid inputs; otherwise, return 0
+  if (typeof n !== 'string' && typeof n !== 'number') {
+    return 0;
+  }
+
+  // If input is a string, trim whitespace and return 0 if empty
   if (typeof n === 'string') {
     n = n.trim();
-    // Return 0 immediately if string is empty after trimming
     if (n === '') {
       return 0;
     }
@@ -15,14 +19,11 @@ export function parsePriority(n) {
 
   const value = Number(n);
 
-  // If value is not a valid number (NaN), return default priority 0
+  // Return 0 if conversion to number is invalid
   if (isNaN(value)) {
     return 0;
   }
 
-  // Clamp value between 0 and 10
-  const clamped = Math.min(Math.max(Math.floor(value), 0), 10);
-
-  // Return integer priority value
-  return clamped;
+  // Clamp and floor value to integer priority between 0 and 10
+  return Math.min(Math.max(Math.floor(value), 0), 10);
 }
