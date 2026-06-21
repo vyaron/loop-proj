@@ -1,11 +1,11 @@
-export function parsePriority(input) {
-  if (input == null) {
+export function parsePriority(x) {
+  if (x == null) {
     return 0;
   }
 
-  const value = Number(input);
+  const value = Number(x);
 
-  if (!value) {
+  if (Number.isNaN(value) || value < 1) {
     return 1;
   }
 
