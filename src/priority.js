@@ -5,7 +5,7 @@ export function parsePriority(x) {
 
   const value = Number(x);
 
-  if (!value) {
+  if (Number.isNaN(value) || value < 1) {
     return 1;
   }
 
