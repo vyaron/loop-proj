@@ -6,24 +6,24 @@
  * Strings that do not convert cleanly to numbers return 0.
  * Supports numbers in exponential notation (e.g., '1e2'), leading plus signs, and negative numbers.
  *
- * @param {*} inp - The input priority value.
+ * @param {*} n - The input priority value.
  * @returns {number} - An integer priority between 0 and 10.
  */
-export function parsePriority(inp) {
-  if (inp == null) {
+export function parsePriority(n) {
+  if (n == null) {
     // Null or undefined inputs return 0
     return 0;
   }
 
   // Allow only primitive types that can meaningfully represent numbers
-  const type = typeof inp;
+  const type = typeof n;
   if (type !== 'number' && type !== 'string') {
     // For objects, symbols, booleans, functions, etc., return 0
     return 0;
   }
 
   // Convert input to string and trim whitespace
-  const str = String(inp).trim();
+  const str = String(n).trim();
 
   /*
    * Regex explanation:
