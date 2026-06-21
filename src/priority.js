@@ -4,6 +4,15 @@ export function parsePriority(n) {
     return 0;
   }
 
+  // If input is a string, trim whitespace
+  if (typeof n === 'string') {
+    n = n.trim();
+    // Return 0 immediately if string is empty after trimming
+    if (n === '') {
+      return 0;
+    }
+  }
+
   const value = Number(n);
 
   // If value is not a valid number (NaN), return default priority 0
