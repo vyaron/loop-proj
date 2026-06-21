@@ -55,6 +55,14 @@ async function main() {
   const attempt = Number(args.attempt ?? '1');
   const review = JSON.parse(await readFile(reviewPath, 'utf8'));
   const filesToFix = [...new Set(review.filesToFix.filter(isAllowedPath))];
+  let previousTestFeedback = null;
+
+  try {
+    const loopState = JSON.parse(await readFile('.loop-state.json', 'utf8'));
+    previousTestFeedback = loopState.testFeedback ?? null;
+  } catch {
+    previousTestFeedback = null;
+  }
 
   if (filesToFix.length === 0) {
     console.log('No eligible files to fix.');
@@ -76,12 +84,16 @@ async function main() {
       'You are fixing a small JavaScript pull request after code review.',
       'Update only the provided files.',
       'Preserve the project structure and exports.',
+      'Do not create new files or move files to different paths.',
+      'Keep import paths valid relative to each file location.',
       'Return complete rewritten file contents for each updated file.',
-      'Prefer minimal changes that improve correctness, tests, readability, and safety.'
+      'Prefer minimal changes that improve correctness, tests, readability, and safety.',
+      'If previous test feedback exists, prioritize fixing those failures first.'
     ].join(' '),
     userPrompt: JSON.stringify(
       {
         currentReview: review,
+        previousTestFeedback,
         files: filePayload
       },
       null,
@@ -92,6 +104,10 @@ async function main() {
   for (const update of fix.updates) {
     if (!isAllowedPath(update.path)) {
       throw new Error(`Refusing to update disallowed path: ${update.path}`);
+    }
+
+    if (!filesToFix.includes(update.path)) {
+      throw new Error(`Refusing to update file not requested by review: ${update.path}`);
     }
 
     await writeFile(update.path, update.content.endsWith('\n') ? update.content : `${update.content}\n`);

@@ -145,8 +145,19 @@ jobs:
           --attempt "${{ steps.loop_state.outputs.next }}"
 
       - name: Run tests after fix
+        id: tests
+        continue-on-error: true
         if: ${{ fromJSON(steps.review.outputs.score) < 8 && fromJSON(steps.loop_state.outputs.next) <= 5 }}
-        run: npm test
+        shell: bash
+        run: |
+          set -o pipefail
+          npm test 2>&1 | tee artifacts/test-output.txt
+
+      - name: Persist test feedback for next attempt
+        if: ${{ fromJSON(steps.review.outputs.score) < 8 && fromJSON(steps.loop_state.outputs.next) <= 5 }}
+        shell: bash
+        run: |
+          node -e "const fs=require('fs');const statePath='.loop-state.json';const testPath='artifacts/test-output.txt';const state=fs.existsSync(statePath)?JSON.parse(fs.readFileSync(statePath,'utf8')):{};const raw=fs.existsSync(testPath)?fs.readFileSync(testPath,'utf8'):'';state.testFeedback={status:'${{ steps.tests.outcome }}',summary:raw.split(/\r?\n/).slice(-40).join('\n').slice(0,6000)};fs.writeFileSync(statePath,JSON.stringify(state,null,2)+'\n');"  
 
       - name: Check whether files changed
         id: diff
