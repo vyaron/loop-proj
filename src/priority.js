@@ -54,5 +54,5 @@ export function parsePriority(x) {
   }
 
   // Value is between 1 and 10 inclusive
-  return value;
+  return Math.floor(value);
 }
