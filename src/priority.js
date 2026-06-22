@@ -16,17 +16,27 @@ export function parsePriority(x) {
     return 0;
   }
 
-  // Convert to number
-  const value = Number(x);
-
-  // If conversion results in NaN or original input is non-numeric (includes falsy non-null, e.g. '', false), return 1
-  // Check if original input is a number or a string representing a number
-  // Number.isFinite ensures value is a valid finite number
-  if (!Number.isFinite(value)) {
+  // Explicitly check if input is a number or a string that represents a number
+  // If x is a number, use it directly
+  // If x is a string, try to parse it to a finite number
+  // Otherwise, treat as non-numeric input
+  let value;
+  if (typeof x === 'number') {
+    value = x;
+  } else if (typeof x === 'string') {
+    // Attempt to parse string to number
+    value = Number(x);
+  } else {
+    // For all other types (boolean, symbol, object, function), return 1
     return 1;
   }
 
-  // Clamp value between 0 and 10
+  if (!Number.isFinite(value)) {
+    // NaN or Infinite values treated as non-numeric
+    return 1;
+  }
+
+  // Clamp the numeric value between 0 and 10
   if (value < 0) {
     return 0;
   }
