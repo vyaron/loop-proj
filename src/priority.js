@@ -2,8 +2,10 @@
  * Parses an input to determine a numeric priority between 0 and 10.
  * Priority semantics:
  * - null or undefined inputs return 0 (no priority).
+ * - Booleans are converted to numbers: false -> 0, true -> 1.
  * - Invalid or negative inputs return 1 (lowest positive priority).
  * - Zero is a valid priority representing the lowest priority.
+ * - Any positive number less than 1 is rounded up to 1 to avoid discontinuities.
  * - Priorities above 10 are capped at 10.
  *
  * @param {*} x The input to parse as priority.
@@ -29,14 +31,21 @@ export function parsePriority(x) {
     return 1;
   }
 
+  // Booleans converted to numbers: false -> 0, true -> 1. Explicitly documented here.
+
   if (value < 0) {
     // Negative priorities are invalid, return lowest positive priority 1
     return 1;
   }
 
   if (value === 0) {
-    // Zero is allowed as lowest priority
+    // Zero is a valid lowest priority
     return 0;
+  }
+
+  if (value < 1) {
+    // All positive values less than 1 (excluding 0) are rounded up to 1
+    return 1;
   }
 
   if (value > 10) {
@@ -44,10 +53,6 @@ export function parsePriority(x) {
     return 10;
   }
 
-  // Clamp to minimum 1 for any positive numbers less than 1
-  if (value > 0 && value < 1) {
-    return 1;
-  }
-
+  // Value is between 1 and 10 inclusive
   return value;
 }
