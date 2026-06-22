@@ -3,7 +3,10 @@
  *
  * Rules:
  * - null or undefined returns 0
- * - Non-numeric inputs (including empty string, false, symbols, objects, NaN) return 1
+ * - Numeric wrapper objects (e.g. new Number(5)) return their numeric value
+ * - Arrays with a single element that can be parsed as a finite number return the parsed value
+ * - Strings representing numeric values are parsed to numbers
+ * - Non-numeric inputs (empty string, false, symbols, multi-element arrays, objects, functions, NaN, Infinity) return 1
  * - Numeric values less than 0 are clamped to 0
  * - Numeric values greater than 10 are clamped to 10
  * - Numeric values between 0 and 10 inclusive are returned as is
@@ -16,27 +19,35 @@ export function parsePriority(x) {
     return 0;
   }
 
-  // Explicitly check if input is a number or a string that represents a number
-  // If x is a number, use it directly
-  // If x is a string, try to parse it to a finite number
-  // Otherwise, treat as non-numeric input
+  // Unwrap numeric wrapper objects (e.g. new Number(5)) to their primitive value
+  if (typeof x === 'object' && x.valueOf && typeof x.valueOf() === 'number') {
+    x = x.valueOf();
+  }
+
+  // Handle single-element arrays by attempting to parse their single element
+  if (Array.isArray(x)) {
+    if (x.length === 1) {
+      return parsePriority(x[0]);
+    } else {
+      return 1; // multi-element arrays treated as non-numeric
+    }
+  }
+
   let value;
+
   if (typeof x === 'number') {
     value = x;
   } else if (typeof x === 'string') {
-    // Attempt to parse string to number
     value = Number(x);
   } else {
-    // For all other types (boolean, symbol, object, function), return 1
+    // For all other types (boolean, symbol, function, objects that are not numeric wrappers), return 1
     return 1;
   }
 
   if (!Number.isFinite(value)) {
-    // NaN or Infinite values treated as non-numeric
     return 1;
   }
 
-  // Clamp the numeric value between 0 and 10
   if (value < 0) {
     return 0;
   }
@@ -47,3 +58,5 @@ export function parsePriority(x) {
 
   return value;
 }
+
+//# sourceMappingURL=priority.js.map
