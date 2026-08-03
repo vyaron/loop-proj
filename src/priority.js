@@ -1,9 +1,9 @@
-export function parsePriority(x) {
-  if (x == null) {
+export function parsePriority(y) {
+  if (y == null) {
     return 0;
   }
 
-  const value = Number(x);
+  const value = Number(y);
 
   if (!value) {
     return 1;
